@@ -13,18 +13,17 @@
         <level>information</level>
     </logger>
 
-    <!-- Memory limits — assumes 4GB container. Adjust if running on a
-         bigger host. -->
-    <max_server_memory_usage>3221225472</max_server_memory_usage>
-    <max_memory_usage_for_user>2147483648</max_memory_usage_for_user>
+    <!-- Memory limit — capped at 8 GiB so CH doesn't take over the
+         workstation. Bump if you see memory pressure during large queries. -->
+    <max_server_memory_usage>8589934592</max_server_memory_usage>
 
-    <background_pool_size>8</background_pool_size>
-    <background_merges_mutations_concurrency_ratio>2</background_merges_mutations_concurrency_ratio>
-
-    <async_insert>1</async_insert>
-    <wait_for_async_insert>1</wait_for_async_insert>
-    <async_insert_max_data_size>1048576</async_insert_max_data_size>
-    <async_insert_busy_timeout_ms>1000</async_insert_busy_timeout_ms>
+    <!-- MergeTree tuning. number_of_free_entries_in_pool_to_execute_mutation
+         defaults to 20, but the image's default background pool (8 threads *
+         ratio 2 = 16 tasks) is smaller, so CH refuses to boot. Lower to a
+         safe value under the available pool size. -->
+    <merge_tree>
+        <number_of_free_entries_in_pool_to_execute_mutation>2</number_of_free_entries_in_pool_to_execute_mutation>
+    </merge_tree>
 
     <!-- ===================================================================
          Tiered storage: local NVMe (hot) + Cloudflare R2 (cold)

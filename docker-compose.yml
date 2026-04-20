@@ -24,6 +24,7 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./clickhouse/config.xml:/etc/clickhouse-server/config.d/custom.xml:ro
+      - ./clickhouse/users.d/lattica.xml:/etc/clickhouse-server/users.d/lattica.xml:ro
       - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD", "clickhouse-client", "--password", "${CH_PASSWORD}", "--query", "SELECT 1"]

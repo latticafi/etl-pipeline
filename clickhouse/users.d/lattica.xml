@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!--
+    Lattica user-profile overrides.
+    Merged into the default profile at startup.
+    Mounted at /etc/clickhouse-server/users.d/lattica.xml.
+-->
+<clickhouse>
+    <profiles>
+        <default>
+            <!-- Background pool must be large enough that
+                 pool_size * concurrency_ratio > number_of_free_entries_in_pool_to_execute_mutation (20).
+                 32 workstation cores → set pool to 16, ratio 2, giving 32. -->
+            <background_pool_size>16</background_pool_size>
+            <background_merges_mutations_concurrency_ratio>2</background_merges_mutations_concurrency_ratio>
+
+            <!-- Async inserts: batch small inserts server-side. Helps the
+                 bulk import and the live WSS stream. -->
+            <async_insert>1</async_insert>
+            <wait_for_async_insert>1</wait_for_async_insert>
+            <async_insert_max_data_size>1048576</async_insert_max_data_size>
+            <async_insert_busy_timeout_ms>1000</async_insert_busy_timeout_ms>
+        </default>
+    </profiles>
+</clickhouse>

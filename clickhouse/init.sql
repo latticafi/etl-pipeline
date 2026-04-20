@@ -111,6 +111,6 @@ SELECT
     argMax(neg_risk, updated_at)        AS neg_risk,
     argMax(active, updated_at)          AS active,
     argMax(end_date_iso, updated_at)    AS end_date_iso,
-    max(updated_at)                     AS updated_at
+    max(updated_at)                     AS last_updated_at
 FROM lattica.markets
 GROUP BY condition_id;
