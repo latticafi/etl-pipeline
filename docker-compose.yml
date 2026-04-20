@@ -9,20 +9,24 @@ services:
     restart: unless-stopped
     ports:
       # Bind localhost-only so nothing on the open internet can find it.
-      - "127.0.0.1:8123:8123" # HTTP
-      - "127.0.0.1:9000:9000" # native protocol
+      - "127.0.0.1:8123:8123"   # HTTP
+      - "127.0.0.1:9000:9000"   # native protocol
     environment:
+      # Default user password — enables network access. CH refuses TCP/HTTP
+      # for the default user without one.
+      CLICKHOUSE_USER:       ${CH_USER:-default}
+      CLICKHOUSE_PASSWORD:   ${CH_PASSWORD}
       # Credentials forwarded to CH via <from_env=...> in config.xml.
       # Values come from .env (copy .env.example and fill in).
-      R2_ENDPOINT: ${R2_ENDPOINT}
-      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
-      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_ENDPOINT:           ${R2_ENDPOINT}
+      R2_ACCESS_KEY_ID:      ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY:  ${R2_SECRET_ACCESS_KEY}
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./clickhouse/config.xml:/etc/clickhouse-server/config.d/custom.xml:ro
       - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      test: ["CMD", "clickhouse-client", "--password", "${CH_PASSWORD}", "--query", "SELECT 1"]
       interval: 10s
       timeout: 3s
       retries: 5
