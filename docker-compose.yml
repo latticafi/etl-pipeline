@@ -1,0 +1,35 @@
+# Local dev compose for the data pipeline.
+# Production runs via the infra repo's compose stack; this is just for
+# developing and running the historical import locally.
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:25-alpine
+    container_name: lattica-clickhouse
+    restart: unless-stopped
+    ports:
+      # Bind localhost-only so nothing on the open internet can find it.
+      - "127.0.0.1:8123:8123" # HTTP
+      - "127.0.0.1:9000:9000" # native protocol
+    environment:
+      # Credentials forwarded to CH via <from_env=...> in config.xml.
+      # Values come from .env (copy .env.example and fill in).
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/config.xml:/etc/clickhouse-server/config.d/custom.xml:ro
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+volumes:
+  clickhouse_data:
