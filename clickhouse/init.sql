@@ -35,8 +35,11 @@ CREATE TABLE IF NOT EXISTS lattica.trades (
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (condition_id, timestamp)
-TTL toDateTime(timestamp) + INTERVAL 1 YEAR
-SETTINGS index_granularity = 8192;
+TTL toDateTime(timestamp) + INTERVAL 3 DAY   TO VOLUME 'cold',
+    toDateTime(timestamp) + INTERVAL 1 YEAR  DELETE
+SETTINGS
+    storage_policy = 'tiered',
+    index_granularity = 8192;
 
 -- ---------------------------------------------------------------------------
 -- orderbook_snapshots
@@ -64,8 +67,11 @@ CREATE TABLE IF NOT EXISTS lattica.orderbook_snapshots (
 ENGINE = MergeTree()
 PARTITION BY toYYYYMM(timestamp)
 ORDER BY (condition_id, timestamp)
-TTL toDateTime(timestamp) + INTERVAL 6 MONTH
-SETTINGS index_granularity = 8192;
+TTL toDateTime(timestamp) + INTERVAL 3 DAY   TO VOLUME 'cold',
+    toDateTime(timestamp) + INTERVAL 6 MONTH DELETE
+SETTINGS
+    storage_policy = 'tiered',
+    index_granularity = 8192;
 
 -- ---------------------------------------------------------------------------
 -- markets
