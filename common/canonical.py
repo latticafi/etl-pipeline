@@ -43,12 +43,12 @@ class CanonicalTrade:
     condition_id: str
     asset_id: str
     is_yes: bool
-    price: float  # raw price on asset_id
+    price: float            # raw price on asset_id
     canonical_price: float  # YES-frame price
     size: float
-    dollar_volume: float  # price * size, raw frame (not canonical)
-    side: str  # 'BUY' or 'SELL', raw taker direction
-    trade_sign: int  # +1 or -1 in canonical frame
+    dollar_volume: float    # price * size, raw frame (not canonical)
+    side: str               # 'BUY' or 'SELL', raw taker direction
+    trade_sign: int         # +1 or -1 in canonical frame
     timestamp: datetime
     transaction_hash: str
 
@@ -144,11 +144,11 @@ def canonicalize_duckdb(
     *,
     condition_id: str,
     asset_ids: tuple[str, str] | list[str],
-    nonusdc_side: str,  # 'token1' (YES) or 'token2' (NO)
+    nonusdc_side: str,           # 'token1' (YES) or 'token2' (NO)
     raw_price: float,
     usd_amount: float,
     token_amount: float,
-    taker_direction: str,  # 'BUY' or 'SELL'
+    taker_direction: str,        # 'BUY' or 'SELL'
     timestamp: datetime,
     tx_hash: str,
 ) -> CanonicalTrade:
@@ -190,3 +190,54 @@ def canonicalize_duckdb(
         timestamp=timestamp,
         transaction_hash=tx_hash,
     )
+
+
+# ---------------------------------------------------------------------------
+# Vectorized canonicalization for bulk imports
+# ---------------------------------------------------------------------------
+
+
+def canonicalize_batch(
+    *,
+    nonusdc_side: "np.ndarray",      # array of 'token1'/'token2' strings
+    raw_price: "np.ndarray",         # float64
+    taker_direction: "np.ndarray",   # array of 'BUY'/'SELL' strings
+    token1_asset_id: "np.ndarray",   # str, the YES token per row
+    token2_asset_id: "np.ndarray",   # str, the NO token per row
+) -> dict[str, "np.ndarray"]:
+    """Vectorized canonicalization for bulk imports.
+
+    Applies identical logic to canonicalize_duckdb() but over numpy arrays,
+    avoiding per-row function call overhead at 10^9 scale. A per-row call
+    takes microseconds; over 1B rows that's ~2.7 hours of Python overhead
+    we don't need to pay.
+
+    Caller must pre-filter out invalid rows (price out of (0,1), bad
+    nonusdc_side, bad taker_direction) — this function assumes clean input
+    and does not raise on individual bad rows.
+
+    Returns dict of output arrays:
+      - is_yes: bool
+      - asset_id: str (the actual token on the trade)
+      - canonical_price: float64
+      - trade_sign: int8 (+1 / -1)
+
+    The caller is responsible for assembling these back with the other
+    passthrough columns (timestamp, dollar_volume, size, etc.).
+    """
+    import numpy as np  # local import to keep per-row imports zero-cost
+
+    is_yes = nonusdc_side == "token1"
+    canonical_price = np.where(is_yes, raw_price, 1.0 - raw_price)
+    asset_id = np.where(is_yes, token1_asset_id, token2_asset_id)
+
+    # trade_sign = +1 iff is_yes == (side == 'BUY')
+    is_buy = taker_direction == "BUY"
+    trade_sign = np.where(is_yes == is_buy, 1, -1).astype(np.int8)
+
+    return {
+        "is_yes": is_yes,
+        "asset_id": asset_id,
+        "canonical_price": canonical_price,
+        "trade_sign": trade_sign,
+    }

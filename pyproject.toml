@@ -1,5 +1,5 @@
 [project]
-name = "lattica-etl-pipeline"
+name = "lattica-data-pipeline"
 version = "0.1.0"
 description = "Lattica ETL pipeline — Polymarket WSS/Gamma/Data API -> ClickHouse, in-memory market state, IPC to quote-api"
 readme = "README.md"
@@ -10,10 +10,13 @@ dependencies = [
   "grpcio>=1.78.0",
   "grpcio-tools>=1.78.0",
   "httpx>=0.28.1",
+  "numpy>=2.0.0",
+  "pandas>=2.2.0",
   "protobuf>=6.33.5",
   "pydantic>=2.9.0",
   "pydantic-settings>=2.13.1",
   "websockets>=15.0.1",
+  "zstandard>=0.23.0",
 ]
 
 [dependency-groups]
