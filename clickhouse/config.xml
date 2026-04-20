@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!--
+    Lattica ClickHouse config override.
+    Merged with base /etc/clickhouse-server/config.xml at startup.
+    Keep changes minimal — defaults are sane for our workload.
+-->
+<clickhouse>
+    <logger>
+        <level>information</level>
+    </logger>
+
+    <!-- CPX31 has 8GB RAM; compose limits this container to 4GB.
+         Leave headroom for merges and query concurrency. -->
+    <max_server_memory_usage>3221225472</max_server_memory_usage>    <!-- 3 GiB -->
+    <max_memory_usage_for_user>2147483648</max_memory_usage_for_user> <!-- 2 GiB per user -->
+
+    <!-- Merges: 40M rows/day of trades wants non-trivial merge throughput. -->
+    <background_pool_size>8</background_pool_size>
+    <background_merges_mutations_concurrency_ratio>2</background_merges_mutations_concurrency_ratio>
+
+    <!-- async_insert helps when the duckdb import script or ad-hoc clients
+         write small batches. Live ingestor batches in-process, so this path
+         is mostly for backfill / recovery. -->
+    <async_insert>1</async_insert>
+    <wait_for_async_insert>1</wait_for_async_insert>
+    <async_insert_max_data_size>1048576</async_insert_max_data_size>
+    <async_insert_busy_timeout_ms>1000</async_insert_busy_timeout_ms>
+</clickhouse>
